@@ -7,6 +7,10 @@ $def with(movies)
     <title></title>
 </head>
 <body>
+    <form action="/" method="post">
+        <input type="text" name="title">
+        <input type="submit" value="搜索">
+    </form>
     <h1>wqliceman's site</h1>
     $for movie in movies:
         <li>
