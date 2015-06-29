@@ -25,5 +25,3 @@ foolist = [1234,"abcd", 234.56, "dcba"]
 
 print foolist[::-1]
 print foolist
-
-print 2<>2
