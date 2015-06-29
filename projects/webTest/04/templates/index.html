@@ -1,0 +1,20 @@
+$def with(movies)
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <form action="/" method="post">
+        <input type="text" name="title">
+        <input type="submit" value="搜索">
+    </form>
+    <h1>wqliceman's site</h1>
+    $for movie in movies:
+        <li>
+            $movie['id'], $movie['title'], $movie['origin'], $movie['directors'], $movie['casts'], $movie['year'], $movie['genres'], $movie['countries'],$movie['summary']
+        </li>
+</body>
+</html>
