@@ -27,7 +27,7 @@ def add_movie(data):
 
 movie_ids = []
 for index in range(0,250, 50):
-    response= urllib.urlopen('http://api.douban.com/v2/movie/top250?start=%d&count=20'% index)
+    response= urllib.urlopen('http://api.douban.com/v2/movie/top250?start=%d&count=50'% index)
     data = response.read()
     #print data
     data_json = json.loads(data)

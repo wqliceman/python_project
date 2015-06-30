@@ -7,7 +7,7 @@ import time
 
 def get_poster(id, url):
     pic = urllib.urlopen(url).read()
-    file_name = './templates/static/poster/%d.jpg' % id
+    file_name = './static/poster/%d.jpg' % id
     f = file(file_name, 'wb')
     f.write(pic)
     f.close()
