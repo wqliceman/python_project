@@ -11,6 +11,7 @@ import xlwt
 import os
 import math
 import random
+import requests
 
 #1. get login capcha url
 
@@ -20,6 +21,7 @@ import random
 
 #4. goto account pages
 
+#use requests
 
 class CDianpingOrder:
     def __init__(self, _owner, _username, _password):
@@ -30,7 +32,7 @@ class CDianpingOrder:
         #退款URL
         self.refundURL=self.host + "/receipt/refund/"
 
-        self.UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+        self.UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2438.3 Safari/537.36"
 
         self.owner = _owner
         self.username = _username
@@ -40,7 +42,7 @@ class CDianpingOrder:
         self.workbook = xlwt.Workbook(encoding='utf-8')
         self.worksheet = self.workbook.add_sheet(u'点评订单')
 
-        self.Cookie = 'ctu=5687191ae9b782fbe7ca4fe79751249a6e32c84e463d95e1a78578d94a11057de8ae6f03850af2dcc8e7cb93acf6299c; _tr.u=iTU5BfYgBCLl2c0L; _hc.v="\\"6f018ca8-ccff-45f4-9fc7-a014f3133a8c.1437790955\\""; ctu=8abaa8148fbc3603e4050d4c8d3847789e483fdb7eb4cfcb368b1f015ee6f936; PHOENIX_ID=0a017715-14ec4373426-7b77b; ua=13883614086; lln=13883614086; ctu=5687191ae9b782fbe7ca4fe79751249a6e32c84e463d95e1a78578d94a11057d8043e7356a5cf261db9383a19a3f5c96; _tr.s=VAZxRZMWeQL6FLmn; cy=9; cye=chongqing; JSESSIONID=69661B4EB010A5B57A0ECF5E1EB8D70B'
+        self.Cookie = '_hc.v="\\"6f018ca8-ccff-45f4-9fc7-a014f3133a8c.1437790955\\""; t_rct=12843013|8131449|11420839|2275728|11464259; TGLamuClose=1; cy=9; cye=chongqing; _tr.u=dVgEkJA2gPDeH3cL; ctu=04a44bfbb863a8a09d0f92416d50c0cc973e3944012a10314724c3ea1107d353; ua=13883614086; PHOENIX_ID=0a017f1c-14ed968908f-2cca3e; _tr.s=IPKfcTAN0CY39Wp8; JSESSIONID=BECB6369CD51A65C936D08213CC7BB52'
 
         self.postHerder = {
             "Host": "t.dianping.com",
@@ -58,10 +60,7 @@ class CDianpingOrder:
         }
 
         #cookie
-        cookie = cookielib.CookieJar()
-        cookie_handler = urllib2.HTTPCookieProcessor(cookie)
-        self.opener = urllib2.build_opener(cookie_handler, urllib2.HTTPHandler)
-        urllib2.install_opener(self.opener)
+        self.session = requests.session()
 
     def get_capcha_url(self):
         post_header = {
@@ -69,11 +68,11 @@ class CDianpingOrder:
             "Connection": "keep-alive",
             "User-Agent": self.UserAgent
         }
-        request = urllib2.Request(url=self.loginURL, headers=post_header)
+        response = self.session.get(url=self.loginURL, headers=post_header)
 
-        response = self.opener.open(request)
-        content = response.read()
-        status = response.getcode()
+        self.Cookie = response.cookies
+        content = response.content()
+        status = response.status_code
         if status == 200:
             print u"获取请求成功"
             pattern = re.compile('<img id="mcImgVC" src=\'(.*?)\'', re.S)
@@ -110,12 +109,22 @@ class CDianpingOrder:
         request.add_header("Host", "t.dianping.com")
         request.add_header("Connection", "keep-alive")
         request.add_header("User-Agent", self.UserAgent)
-        request.add_header("Referer", "http://t.dianping.com/login?redirect=/account/coupons"),
+        request.add_header("Referer", "http://t.dianping.com/login?redirect=/account/coupons/filter_2"),
         request.add_header("Cookie", self.Cookie)
+        request.add_header("Accept-Encoding", "gzip, deflate, sdch")
+        request.add_header("Accept-Language", "zh-CN,zh;q=0.8,en;q=0.6")
 
-        response = self.opener.open(request)
-        content = response.read()
-        status = response.getcode()
+        get_headers = {
+            "Host": "t.dianping.com",
+            "User-Agent": self.UserAgent,
+            "Referer": "http://t.dianping.com/login?redirect=/account/coupons/",
+            "Accept-Encoding": "gzip, deflate, sdch",
+            "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6"
+        }
+
+        response = self.session.get(capchaURL, headers=get_headers)
+        content = response.content
+        status = response.status_code
         if status == 200:
             image = open(".\capcha\capcha.png", 'wb')
             image.write(content)
@@ -138,8 +147,9 @@ class CDianpingOrder:
         print post_data
         request = urllib2.Request(self.loginAjax, post_data, self.postHerder)
         response = urllib2.urlopen(request)
-        content = response.read()
-        status = response.getcode()
+        response = self.session.post(self.loginAjax, data=post_data, headers=self.postHerder)
+        content = response.content
+        status = response.status_code
         if status == 200:
             encode_json = json.dumps(eval(content), sort_keys=False)
             decode_json = json.loads(encode_json)
@@ -150,9 +160,15 @@ class CDianpingOrder:
                 request.add_header("User-Agent", self.UserAgent)
                 request.add_header("Referer", "http://t.dianping.com/login?redirect=/account/coupons")
 
-                response = self.opener.open(request)
-                content = response.read()
-                status = response.getcode()
+                get_header = {
+                    "Host", "t.dianping.com",
+                    "User-Agent", self.UserAgent,
+                    "Referer", "http://t.dianping.com/login?redirect=/account/coupons"
+                }
+
+                response = self.session("http://t.dianping.com/account/coupons", headers=get_header)
+                content = response.content
+                status = response.status_code
                 if status == 200:
                     return content
             else:
@@ -190,6 +206,7 @@ class CDianpingOrder:
         request.add_header("Connection", "keep-alive")
         request.add_header("User-Agent", self.UserAgent)
         request.add_header("Referer", "http://t.dianping.com/account/coupons")
+        request.add_header('Cookie', self.Cookie)
 
         response = self.opener.open(request)
         content = response.read()
@@ -248,6 +265,7 @@ class CDianpingOrder:
         request.add_header("Connection", "keep-alive")
         request.add_header("User-Agent", self.UserAgent)
         request.add_header("Referer", "http://t.dianping.com/login?redirect=/account/coupons")
+        request.add_header('Cookie', self.Cookie)
 
         response = self.opener.open(request)
         content = response.read()
@@ -260,14 +278,14 @@ class CDianpingOrder:
         else:
             return False
 
-
-        #获取商品实际付款价格
+    #获取商品实际付款价格
     def get_real_pay_price(self, reund_id):
         request = urllib2.Request(self.refundURL + reund_id)
         request.add_header("Host", "t.dianping.com")
         request.add_header("Connection", "keep-alive")
         request.add_header("User-Agent", self.UserAgent)
         request.add_header("Referer", "http://t.dianping.com/login?redirect=/account/coupons")
+        request.add_header('Cookie', self.Cookie)
 
         response = self.opener.open(request)
         content = response.read()
@@ -338,3 +356,5 @@ if __name__ == '__main__':
                 password = account[1]
                 dianping = CDianpingOrder(owner, username, password)
                 dianping.main()
+    else:
+        print u"没有用户信息"
